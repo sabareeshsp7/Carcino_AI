@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { MapContainer, TileLayer, Marker } from "react-leaflet"
+import { MapContainer, TileLayer, Marker, useMapEvents } from "react-leaflet"
 import L from "leaflet"
 
 // Fix Leaflet icon issues
@@ -32,6 +32,20 @@ export default function DeliveryMap({ selectedPosition, readOnly = false, onPosi
     }
   }, [selectedPosition])
 
+  // MapEvents component to handle map clicks
+  function MapEvents() {
+    useMapEvents({
+      click: (e) => {
+        if (!readOnly && onPositionChange) {
+          const newPosition = { lat: e.latlng.lat, lng: e.latlng.lng };
+          setPosition(newPosition);
+          onPositionChange(newPosition);
+        }
+      },
+    });
+    return null;
+  }
+
   return (
     <MapContainer
       center={[position.lat, position.lng]}
@@ -49,21 +63,8 @@ export default function DeliveryMap({ selectedPosition, readOnly = false, onPosi
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
-      {selectedPosition && (
-        <Marker
-          position={[selectedPosition.lat, selectedPosition.lng]}
-          icon={icon}
-          draggable={!readOnly}
-          eventHandlers={{
-            dragend: (event) => {
-              if (onPositionChange) {
-                const { lat, lng } = event.target.getLatLng()
-                onPositionChange({ lat, lng })
-              }
-            },
-          }}
-        />
-      )}
+      {!readOnly && <MapEvents />}
+      <Marker position={[position.lat, position.lng]} icon={icon} />
     </MapContainer>
   )
 }

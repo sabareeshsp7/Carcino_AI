@@ -15,8 +15,10 @@ import { Label } from "@/components/ui/label"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Separator } from "@/components/ui/separator"
 import { Textarea } from "@/components/ui/textarea"
-import { toast } from "@/components/ui/use-toast"
+import { toast } from "sonner" // Changed to sonner for consistency
 import { useCart } from "@/contexts/cart-context"
+// Add medical history context import
+import { useMedicalHistory } from "@/contexts/MedicalHistoryContext"
 
 // Dynamically import the Map component to avoid SSR issues with Leaflet
 const DeliveryMap = dynamic(() => import("@/components/shop/delivery-map"), {
@@ -27,12 +29,15 @@ const DeliveryMap = dynamic(() => import("@/components/shop/delivery-map"), {
 export default function OrderConfirmationPage() {
   const router = useRouter()
   const { items, total, subtotal, discount, deliveryAddress, clearCart } = useCart()
+  // Change this line to use the correct function name
+  const { addHistory } = useMedicalHistory()
   const [orderId, setOrderId] = useState("")
   const [orderDate, setOrderDate] = useState("")
   const [deliveryTime, setDeliveryTime] = useState("morning")
   const [rating, setRating] = useState(0)
   const [feedback, setFeedback] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isSavedToHistory, setIsSavedToHistory] = useState(false)
   const invoiceRef = useRef(null)
 
   useEffect(() => {
@@ -48,13 +53,32 @@ export default function OrderConfirmationPage() {
     }
   }, [items, deliveryAddress, orderId, router])
 
+  // Update the medical history save function to use addHistory
+  const saveToMedicalHistory = () => {
+    if (!items || items.length === 0 || isSavedToHistory) return
+
+    // Format medicine items for medical history
+    const medicineList = items.map((item) => `${item.name} x ${item.quantity}`).join(", ")
+
+    // Add to medical history using the correct function name
+    addHistory({
+      type: "Medicine",
+      data: `Order #${orderId} - ${medicineList} - Total: ₹${total.toFixed(2)} - Delivery: ${deliveryAddress ? `${deliveryAddress.address}, ${deliveryAddress.city}` : "N/A"}`
+    })
+
+    setIsSavedToHistory(true)
+    toast.success("Saved to medical history", {
+      description: "Your order has been added to your medical records",
+    })
+  }
+
   const handleDownloadInvoice = () => {
     const doc = new jsPDF()
 
     // Add company logo/header
     doc.setFontSize(20)
     doc.setTextColor(0, 102, 204)
-    doc.text("DermaSense AI", 105, 20, { align: "center" })
+    doc.text(" AI", 105, 20, { align: "center" })
 
     doc.setFontSize(12)
     doc.setTextColor(0, 0, 0)
@@ -100,7 +124,7 @@ export default function OrderConfirmationPage() {
     })
 
     // Add total section
-    const finalY = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 10
+    const finalY = (doc as jsPDF & { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 10
 
     doc.text(`Subtotal: ₹${subtotal.toFixed(2)}`, 150, finalY)
     if (discount > 0) {
@@ -117,8 +141,7 @@ export default function OrderConfirmationPage() {
     // Save the PDF
     doc.save(`DermaSense-Invoice-${orderId}.pdf`)
 
-    toast({
-      title: "Invoice downloaded",
+    toast.success("Invoice downloaded", {
       description: "Your invoice has been downloaded successfully.",
     })
   }
@@ -128,8 +151,7 @@ export default function OrderConfirmationPage() {
 
     // Simulate API call
     setTimeout(() => {
-      toast({
-        title: "Thank you for your feedback!",
+      toast.success("Thank you for your feedback!", {
         description: "Your feedback has been submitted successfully.",
       })
       setIsSubmitting(false)
@@ -151,8 +173,7 @@ export default function OrderConfirmationPage() {
         })
     } else {
       navigator.clipboard.writeText(shareText)
-      toast({
-        title: "Link copied",
+      toast.success("Link copied", {
         description: "Order details copied to clipboard.",
       })
     }
@@ -162,6 +183,13 @@ export default function OrderConfirmationPage() {
     clearCart()
     router.push("/dashboard")
   }
+
+  // Save to history on initial render
+  useEffect(() => {
+    if (items && items.length > 0 && orderId && !isSavedToHistory) {
+      saveToMedicalHistory()
+    }
+  }, [items, orderId])
 
   if (!items || items.length === 0 || !deliveryAddress) {
     return (
@@ -185,6 +213,12 @@ export default function OrderConfirmationPage() {
         <p className="mt-2 text-muted-foreground">
           Your order #{orderId} has been placed successfully on {orderDate}.
         </p>
+        {/* Medical history saved confirmation */}
+        {isSavedToHistory && (
+          <div className="mt-2 text-xs text-green-600 dark:text-green-400 flex items-center">
+            <Check className="h-3 w-3 mr-1" /> Saved to your medical history
+          </div>
+        )}
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
@@ -193,9 +227,21 @@ export default function OrderConfirmationPage() {
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
               Order Summary
-              <Button variant="outline" size="icon" onClick={handleDownloadInvoice}>
-                <Download className="h-4 w-4" />
-              </Button>
+              <div className="flex gap-2">
+                {!isSavedToHistory && (
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={saveToMedicalHistory}
+                    title="Save to Medical History"
+                  >
+                    <div className="h-4 w-4 text-green-600">+</div>
+                  </Button>
+                )}
+                <Button variant="outline" size="icon" onClick={handleDownloadInvoice}>
+                  <Download className="h-4 w-4" />
+                </Button>
+              </div>
             </CardTitle>
             <CardDescription>Order #{orderId}</CardDescription>
           </CardHeader>

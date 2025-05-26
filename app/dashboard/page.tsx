@@ -13,7 +13,6 @@ import {
   Stethoscope,
   ChevronLeft,
   ChevronRight,
-  Pill,
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -65,22 +64,22 @@ const features = [
       color: "bg-green-100",
       iconColor: "text-green-500",
     },
-    {
-      title: "Treatment Plans",
-      description: "View and manage your personalized treatment plans",
-      icon: Activity,
-      href: "/dashboard/treatment",
-      color: "bg-purple-100",
-      iconColor: "text-purple-500",
-    },
-    {
-      title: "Health Metrics & Medication",
-      description: "Track health indicators and manage medications",
-      icon: Pill,
-      href: "/dashboard/metrics",
-      color: "bg-red-100",
-      iconColor: "text-red-500",
-    },
+    // {
+    //   title: "Treatment Plans",
+    //   description: "View and manage your personalized treatment plans",
+    //   icon: Activity,
+    //   href: "/dashboard/treatment",
+    //   color: "bg-purple-100",
+    //   iconColor: "text-purple-500",
+    // },
+    // {
+    //   title: "Health Metrics & Medication",
+    //   description: "Track health indicators and manage medications",
+    //   icon: Pill,
+    //   href: "/dashboard/metrics",
+    //   color: "bg-red-100",
+    //   iconColor: "text-red-500",
+    // },
     {
       title: "Community & Resources",
       description: "Connect with others and access educational resources",

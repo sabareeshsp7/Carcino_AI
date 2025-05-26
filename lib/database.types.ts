@@ -75,15 +75,11 @@ export interface Database {
       }
       medical_histories: {
         Row: {
-          id: string
-          user_id: string
-          condition_name: string
-          diagnosis_date: string
-          treatment: string | null
-          status: string
-          notes: string | null
-          created_at: string
-          updated_at: string
+          id: string;
+  user_id: string;
+  type: string;
+  data: string;
+  date: string;
         }
         Insert: {
           id?: string

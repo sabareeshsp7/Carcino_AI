@@ -24,14 +24,15 @@ app.add_middleware(
 model = None
 
 def load_model():
-    global model
+    global model, expected_input_shape
     model_path = "model/carcinoma_model.h5"
     if os.path.exists(model_path):
         model = tf.keras.models.load_model(model_path)
         print("Model loaded successfully!")
         model.summary()
+        expected_input_shape = model.input_shape[1:3]  # (height, width)
     else:
-        print(f"Model file not found at {model_path}")
+        expected_input_shape = (224, 224)
         model = tf.keras.Sequential([
             tf.keras.layers.InputLayer(input_shape=(224, 224, 3)),
             tf.keras.layers.Conv2D(16, 3, activation='relu'),
@@ -40,7 +41,17 @@ def load_model():
         ])
         print("Warning: Using placeholder model for testing")
 
-class_names = ["Normal", "Carcinoma"]
+class_names = ["akiec", "bcc", "bkl", "df", "mel", "nv", "vasc"]
+
+class_details = {
+    "akiec": {"name": "Actinic Keratoses", "risk": "High", "emoji": "🚫", "info": "Precancerous; can become squamous cell carcinoma.", "action": "Consult a dermatologist soon."},
+    "bcc":   {"name": "Basal Cell Carcinoma", "risk": "High", "emoji": "⚠️", "info": "Common skin cancer; requires medical treatment.", "action": "Seek medical advice."},
+    "bkl":   {"name": "Benign Keratosis", "risk": "Low", "emoji": "✅", "info": "Non-cancerous growth; often harmless.", "action": "Monitor if changes occur."},
+    "df":    {"name": "Dermatofibroma", "risk": "Low", "emoji": "🌿", "info": "Benign skin lesion; usually not serious.", "action": "No urgent action needed."},
+    "mel":   {"name": "Melanoma", "risk": "Very High", "emoji": "🚑", "info": "Most dangerous form of skin cancer.", "action": "Immediate medical consultation required."},
+    "nv":    {"name": "Melanocytic Nevus", "risk": "Low", "emoji": "💚", "info": "Common mole; generally benign.", "action": "Routine monitoring is fine."},
+    "vasc":  {"name": "Vascular Lesion", "risk": "Medium", "emoji": "🩸", "info": "Blood vessel-related lesion; usually harmless.", "action": "Dermatologist check-up recommended."},
+}
 
 class PredictionResult(BaseModel):
     prediction: str
@@ -58,63 +69,65 @@ def read_root():
 
 def preprocess_image(image_bytes):
     try:
-        image = Image.open(io.BytesIO(image_bytes))
-        if image.mode != "RGB":
-            image = image.convert("RGB")
-        image = image.resize((224, 224), Image.LANCZOS)
+        image = Image.open(io.BytesIO(image_bytes)).convert("RGB")
+
+        # ✅ Match training input size
+        expected_input_size = (64, 64)
+        image = image.resize(expected_input_size, Image.LANCZOS)
+
         image_array = np.array(image)
-        if image_array.shape != (224, 224, 3):
-            raise ValueError(f"Unexpected image shape: {image_array.shape}, expected (224, 224, 3)")
+        if image_array.shape != (64, 64, 3):
+            raise ValueError(f"Unexpected image shape after resizing: {image_array.shape}")
+
         image_array = image_array.astype(np.float32) / 255.0
         image_array = np.expand_dims(image_array, axis=0)
+
         print(f"Preprocessed image shape: {image_array.shape}")
         return image_array
     except Exception as e:
         print(f"Error in preprocessing: {str(e)}")
         raise
 
+
 def generate_heatmap(image_array, predictions):
     try:
-        model_layers = [layer.name for layer in model.layers]
-        print(f"Model layers: {model_layers}")
         conv_layers = [layer.name for layer in model.layers if 'conv' in layer.name.lower()]
         if not conv_layers:
-            original_img = (image_array[0] * 255).astype(np.uint8)
-            confidence = np.max(predictions[0])
-            heatmap = np.zeros((224, 224), dtype=np.float32)
-            heatmap.fill(confidence)
-            heatmap = np.uint8(255 * heatmap)
-            heatmap = cv2.applyColorMap(heatmap, cv2.COLORMAP_JET)
-            superimposed_img = cv2.addWeighted(original_img, 0.6, heatmap, 0.4, 0)
-        else:
-            last_conv_layer = conv_layers[-1]
-            grad_model = tf.keras.models.Model(
-                inputs=[model.inputs],
-                outputs=[model.output, model.get_layer(last_conv_layer).output]
-            )
-            with tf.GradientTape() as tape:
-                preds, conv_outputs = grad_model(image_array)
-                top_pred_index = tf.argmax(preds[0])
-                top_class_channel = preds[:, top_pred_index]
-            grads = tape.gradient(top_class_channel, conv_outputs)
-            pooled_grads = tf.reduce_mean(grads, axis=(0, 1, 2))
-            conv_outputs = conv_outputs[0]
-            heatmap = tf.reduce_sum(tf.multiply(pooled_grads, conv_outputs), axis=-1)
-            heatmap = tf.maximum(heatmap, 0) / tf.math.reduce_max(heatmap)
-            heatmap = heatmap.numpy()
-            heatmap = cv2.resize(heatmap, (224, 224))
-            heatmap = np.uint8(255 * heatmap)
-            heatmap = cv2.applyColorMap(heatmap, cv2.COLORMAP_JET)
-            original_img = (image_array[0] * 255).astype(np.uint8)
-            superimposed_img = cv2.addWeighted(original_img, 0.6, heatmap, 0.4, 0)
+            raise Exception("No convolutional layers found for heatmap.")
+
+        last_conv_layer = conv_layers[-1]
+        grad_model = tf.keras.models.Model(
+            inputs=[model.inputs],
+            outputs=[model.output, model.get_layer(last_conv_layer).output]
+        )
+
+        with tf.GradientTape() as tape:
+            preds, conv_outputs = grad_model(image_array)
+            top_pred_index = tf.argmax(preds[0])
+            top_class_channel = preds[:, top_pred_index]
+
+        grads = tape.gradient(top_class_channel, conv_outputs)
+        pooled_grads = tf.reduce_mean(grads, axis=(0, 1, 2))
+        conv_outputs = conv_outputs[0]
+        heatmap = tf.reduce_sum(tf.multiply(pooled_grads, conv_outputs), axis=-1)
+
+        heatmap = tf.maximum(heatmap, 0) / tf.math.reduce_max(heatmap)
+        heatmap = cv2.resize(heatmap.numpy(), (64, 64))  # match input shape
+        heatmap = np.uint8(255 * heatmap)
+        heatmap = cv2.applyColorMap(heatmap, cv2.COLORMAP_JET)
+
+        original_img = (image_array[0] * 255).astype(np.uint8)
+        superimposed_img = cv2.addWeighted(original_img, 0.6, heatmap, 0.4, 0)
         _, buffer = cv2.imencode('.png', superimposed_img)
         heatmap_base64 = base64.b64encode(buffer).decode('utf-8')
         return heatmap_base64
+
     except Exception as e:
-        print(f"Error generating heatmap: {str(e)}")
-        blank_image = np.zeros((224, 224, 3), dtype=np.uint8)
-        _, buffer = cv2.imencode('.png', blank_image)
+        print(f"[Heatmap] {str(e)}")
+        blank = np.zeros((64, 64, 3), dtype=np.uint8)
+        _, buffer = cv2.imencode('.png', blank)
         return base64.b64encode(buffer).decode('utf-8')
+
 
 @app.post("/predict", response_model=PredictionResult)
 async def predict(file: UploadFile = File(...)):

@@ -6,6 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { ArrowLeft, Check, CreditCard, Landmark, Smartphone } from "lucide-react"
 import { useForm } from "react-hook-form"
 import * as z from "zod"
+import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -13,7 +14,6 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Separator } from "@/components/ui/separator"
-import { toast } from "@/components/ui/use-toast"
 import { useCart } from "@/contexts/cart-context"
 
 const cardFormSchema = z.object({
@@ -24,7 +24,7 @@ const cardFormSchema = z.object({
 })
 
 const upiFormSchema = z.object({
-  upiId: z.string().min(5, "UPI ID is required").regex(/@/, "UPI ID must include @"),
+  upiId: z.string().min(5, "UPI ID is required").includes("@", { message: "UPI ID must include @" }),
 })
 
 const netbankingFormSchema = z.object({
@@ -79,28 +79,27 @@ export default function PaymentPage() {
       // Simulate order confirmation
       await new Promise((resolve) => setTimeout(resolve, 1500))
 
-      toast({
-        title: "Payment successful!",
+      toast.success("Payment successful!", {
         description: "Your payment has been processed successfully.",
       })
 
       // Redirect to order confirmation page instead of clearing cart
       router.push("/dashboard/order-confirmation")
     } catch {
-      toast({
-        variant: "destructive",
-        title: "Payment failed",
+      toast.error("Payment failed", {
         description: "An error occurred while processing your payment. Please try again.",
       })
       setIsProcessing(false)
     }
   }
 
-  const onCardSubmit = () => {
+  const onCardSubmit = (values: z.infer<typeof cardFormSchema>) => {
+    console.log("Processing card payment with:", values)
     processPayment()
   }
 
-  const onUpiSubmit = () => {
+  const onUpiSubmit = (values: z.infer<typeof upiFormSchema>) => {
+    console.log("Processing UPI payment with:", values)
     processPayment()
   }
 
@@ -146,7 +145,7 @@ export default function PaymentPage() {
             <CardContent className="space-y-6">
               <RadioGroup
                 value={paymentMethod}
-                onValueChange={(value: "card" | "upi" | "netbanking" | "cod") => setPaymentMethod(value)}
+                onValueChange={(value) => setPaymentMethod(value as "card" | "upi" | "netbanking" | "cod")}
                 className="grid grid-cols-2 gap-4 md:grid-cols-4"
               >
                 <div>

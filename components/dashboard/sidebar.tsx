@@ -15,7 +15,6 @@ import {
   User,
   Users,
   Microscope,
-  Pill,
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -38,16 +37,11 @@ const menuItems = [
     icon: Calendar,
     href: "/dashboard/appointments",
   },
-  {
-    title: "Treatment Plans",
-    icon: Activity,
-    href: "/dashboard/treatment",
-  },
-  {
-    title: "Health Metrics & Medication",
-    icon: Pill,
-    href: "/dashboard/metrics",
-  },
+  // {
+  //   title: "Treatment Plans",
+  //   icon: Activity,
+  //   href: "/dashboard/treatment",
+  // },
   {
     title: "Community & Resources",
     icon: Users,

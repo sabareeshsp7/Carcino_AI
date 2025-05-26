@@ -17,147 +17,371 @@ import {
   Bell,
   Stethoscope,
   Download,
+  Info,
+  X,
 } from "lucide-react"
 import { format, addDays } from "date-fns"
 import { jsPDF } from "jspdf"
-
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Slider } from "@/components/ui/slider"
 import { Switch } from "@/components/ui/switch"
 import { Badge } from "@/components/ui/badge"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
-import { toast } from "@/components/ui/use-toast"
 import { cn } from "@/lib/utils"
+import { toast } from "sonner"
 
-// Sample data for doctors
-const doctors = [
+// Add this import for medical history context
+import { useMedicalHistory } from "@/contexts/MedicalHistoryContext"
+
+// Define the Doctor interface
+interface Doctor {
+  id: number;
+  name: string;
+  specialty: string;
+  subspecialty: string;
+  hospital: string;
+  rating: number;
+  reviews: number;
+  experience: number;
+  image: string;
+  availableToday: boolean;
+  nextAvailable: string;
+  consultationFee: number;
+  location: string;
+  about: string;
+  education: string[];
+  languages: string[];
+  telemedicine: boolean;
+}
+
+// Update the doctors array with correct image links
+const doctors: Doctor[] = [
   {
     id: 1,
-    name: "Dr. Priya Sharma",
-    specialty: "Surgical Oncology",
-    subspecialty: "Melanoma",
-    hospital: "City Cancer Institute",
-    rating: 4.9,
-    reviews: 124,
+    name: "Dr. Meera Iyer",
+    specialty: "Dermatology",
+    subspecialty: "Cosmetic Dermatology",
+    hospital: "Apollo Hospitals",
+    rating: 4.8,
+    reviews: 156,
     experience: 15,
-    image: "/placeholder.svg?height=150&width=150",
+    image: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2'%3E%3C/path%3E%3Ccircle cx='12' cy='7' r='4'%3E%3C/circle%3E%3C/svg%3E",
     availableToday: true,
     nextAvailable: "Today, 2:00 PM",
-    consultationFee: 1500,
+    consultationFee: 800,
     location: "Mumbai",
-    about:
-      "Dr. Sharma is a renowned surgical oncologist specializing in melanoma and other skin cancers. She has performed over 1000 successful surgeries and is known for her patient-centered approach to care.",
+    about: "Dr. Meera Iyer is a renowned dermatologist with expertise in cosmetic dermatology and skin cancer treatment. She has successfully treated over 5000 patients and is known for her patient-centric approach.",
     education: [
-      "MD in Surgical Oncology, All India Institute of Medical Sciences",
-      "Fellowship in Melanoma Surgery, Memorial Sloan Kettering Cancer Center, USA",
+      "MBBS - Grant Medical College, Mumbai",
+      "MD (Dermatology) - KEM Hospital, Mumbai",
+      "Fellowship in Cosmetic Dermatology - American Academy of Dermatology"
+    ],
+    languages: ["English", "Hindi", "Tamil"],
+    telemedicine: true,
+  },
+  {
+    id: 2,
+    name: "Dr. Rohan Desai",
+    specialty: "Dermatology",
+    subspecialty: "Skin Cancer",
+    hospital: "Fortis Hospital",
+    rating: 4.7,
+    reviews: 132,
+    experience: 12,
+    image: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2'%3E%3C/path%3E%3Ccircle cx='12' cy='7' r='4'%3E%3C/circle%3E%3C/svg%3E",
+    availableToday: false,
+    nextAvailable: "Tomorrow, 10:30 AM",
+    consultationFee: 750,
+    location: "Mumbai",
+    about: "Dr. Rohan Desai specializes in skin cancer diagnosis and treatment. He has extensive experience in dermatosurgery and is known for his expertise in treating complex skin conditions.",
+    education: [
+      "MBBS - Seth GS Medical College, Mumbai",
+      "MD (Dermatology) - KEM Hospital, Mumbai",
+      "Diploma in Dermatology - Royal College of Physicians, London"
     ],
     languages: ["English", "Hindi", "Marathi"],
     telemedicine: true,
   },
   {
-    id: 2,
-    name: "Dr. Rajiv Mehta",
-    specialty: "Medical Oncology",
-    subspecialty: "Skin Cancer",
-    hospital: "National Cancer Hospital",
-    rating: 4.7,
-    reviews: 98,
-    experience: 12,
-    image: "/placeholder.svg?height=150&width=150",
-    availableToday: false,
-    nextAvailable: "Tomorrow, 10:30 AM",
-    consultationFee: 1800,
+    id: 3,
+    name: "Dr. Shalini Verma",
+    specialty: "Dermatology",
+    subspecialty: "Dermatopathology",
+    hospital: "Max Super Speciality Hospital",
+    rating: 4.9,
+    reviews: 189,
+    experience: 18,
+    image: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2'%3E%3C/path%3E%3Ccircle cx='12' cy='7' r='4'%3E%3C/circle%3E%3C/svg%3E",
+    availableToday: true,
+    nextAvailable: "Today, 4:15 PM",
+    consultationFee: 1000,
     location: "Delhi",
-    about:
-      "Dr. Mehta is a medical oncologist with expertise in treating various types of skin cancers. He specializes in targeted therapies and immunotherapies for advanced skin cancers.",
+    about: "Dr. Shalini Verma is a leading dermatopathologist with expertise in diagnosing complex skin conditions. She combines clinical expertise with advanced diagnostic techniques.",
     education: [
-      "MD in Medical Oncology, Tata Memorial Hospital",
-      "Research Fellowship in Immunotherapy, MD Anderson Cancer Center, USA",
+      "MBBS - Maulana Azad Medical College, Delhi",
+      "MD (Dermatology) - AIIMS, Delhi",
+      "Fellowship in Dermatopathology - Harvard Medical School"
     ],
     languages: ["English", "Hindi", "Punjabi"],
     telemedicine: true,
   },
   {
-    id: 3,
-    name: "Dr. Ananya Desai",
-    specialty: "Dermatologic Oncology",
-    subspecialty: "Basal Cell Carcinoma",
-    hospital: "Skin & Cancer Foundation",
-    rating: 4.8,
-    reviews: 156,
-    experience: 10,
-    image: "/placeholder.svg?height=150&width=150",
-    availableToday: true,
-    nextAvailable: "Today, 4:15 PM",
-    consultationFee: 1200,
-    location: "Bangalore",
-    about:
-      "Dr. Desai combines expertise in dermatology and oncology to provide comprehensive care for skin cancer patients. She specializes in early detection and non-surgical treatments for basal cell carcinoma.",
-    education: [
-      "MD in Dermatology, KEM Hospital",
-      "Fellowship in Dermatologic Oncology, University of California, San Francisco",
-    ],
-    languages: ["English", "Hindi", "Kannada", "Gujarati"],
-    telemedicine: true,
-  },
-  {
     id: 4,
-    name: "Dr. Vikram Singh",
-    specialty: "Radiation Oncology",
-    subspecialty: "Squamous Cell Carcinoma",
-    hospital: "Advanced Cancer Treatment Center",
-    rating: 4.6,
-    reviews: 87,
+    name: "Dr. Ayaan Kapoor",
+    specialty: "Dermatology",
+    subspecialty: "Mohs Surgery",
+    hospital: "Medanta The Medicity",
+    rating: 4.8,
+    reviews: 145,
     experience: 14,
-    image: "/placeholder.svg?height=150&width=150",
+    image: "	data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2'%3E%3C/path%3E%3Ccircle cx='12' cy='7' r='4'%3E%3C/circle%3E%3C/svg%3E",
     availableToday: false,
     nextAvailable: "Day after tomorrow, 11:00 AM",
-    consultationFee: 1600,
-    location: "Chennai",
-    about:
-      "Dr. Singh is a radiation oncologist specializing in the treatment of squamous cell carcinoma and other skin cancers. He is an expert in advanced radiation techniques that minimize damage to surrounding tissues.",
+    consultationFee: 1200,
+    location: "Delhi",
+    about: "Dr. Ayaan Kapoor is a specialist in Mohs micrographic surgery and skin cancer treatment. He is known for his precision in surgical techniques and excellent patient outcomes.",
     education: [
-      "MD in Radiation Oncology, Christian Medical College",
-      "Advanced Training in IMRT and SBRT, Royal Marsden Hospital, UK",
+      "MBBS - AIIMS, Delhi",
+      "MD (Dermatology) - AIIMS, Delhi",
+      "Fellowship in Mohs Surgery - Mayo Clinic, USA"
     ],
-    languages: ["English", "Hindi", "Tamil"],
-    telemedicine: false,
+    languages: ["English", "Hindi", "Urdu"],
+    telemedicine: true,
   },
   {
     id: 5,
-    name: "Dr. Meera Patel",
-    specialty: "Surgical Oncology",
-    subspecialty: "Merkel Cell Carcinoma",
-    hospital: "Premier Cancer Hospital",
-    rating: 4.9,
-    reviews: 112,
-    experience: 18,
-    image: "/placeholder.svg?height=150&width=150",
+    name: "Dr. Anjali Nair",
+    specialty: "Dermatology",
+    subspecialty: "Clinical Dermatology",
+    hospital: "Manipal Hospital",
+    rating: 4.7,
+    reviews: 167,
+    experience: 10,
+    image: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2'%3E%3C/path%3E%3Ccircle cx='12' cy='7' r='4'%3E%3C/circle%3E%3C/svg%3E",
     availableToday: true,
     nextAvailable: "Today, 1:30 PM",
-    consultationFee: 2000,
-    location: "Hyderabad",
-    about:
-      "Dr. Patel is a highly experienced surgical oncologist with special interest in rare skin cancers like Merkel cell carcinoma. She is known for her precision in Mohs surgery and reconstructive techniques.",
+    consultationFee: 700,
+    location: "Bangalore",
+    about: "Dr. Anjali Nair specializes in general dermatology and cosmetic procedures. She has a special interest in treating skin allergies and hair disorders.",
     education: [
-      "MD in General Surgery, JIPMER",
-      "Fellowship in Surgical Oncology, Royal Melbourne Hospital, Australia",
-      "Advanced Training in Mohs Surgery, Cleveland Clinic, USA",
+      "MBBS - Bangalore Medical College",
+      "MD (Dermatology) - KEM Hospital, Mumbai",
+      "Diploma in Clinical Dermatology - British Association of Dermatologists"
     ],
-    languages: ["English", "Hindi", "Telugu", "Gujarati"],
+    languages: ["English", "Hindi", "Malayalam"],
     telemedicine: true,
   },
+  {
+    id: 6,
+    name: "Dr. Sunil Menon",
+    specialty: "Dermatology",
+    subspecialty: "Pediatric Dermatology",
+    hospital: "Rainbow Children's Hospital",
+    rating: 4.9,
+    reviews: 178,
+    experience: 16,
+    image: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2'%3E%3C/path%3E%3Ccircle cx='12' cy='7' r='4'%3E%3C/circle%3E%3C/svg%3E",
+    availableToday: true,
+    nextAvailable: "Today, 3:00 PM",
+    consultationFee: 900,
+    location: "Bangalore",
+    about: "Dr. Sunil Menon is a pediatric dermatologist with expertise in treating skin conditions in children. He is known for his gentle approach and effective treatment methods.",
+    education: [
+      "MBBS - St. John's Medical College, Bangalore",
+      "MD (Dermatology) - KEM Hospital, Mumbai",
+      "Fellowship in Pediatric Dermatology - Great Ormond Street Hospital, London"
+    ],
+    languages: ["English", "Hindi", "Malayalam"],
+    telemedicine: true,
+  },
+  {
+    id: 7,
+    name: "Dr. Ravi Nandakumar",
+    specialty: "Dermatology",
+    subspecialty: "Skin Surgery",
+    hospital: "Narayana Health",
+    rating: 4.6,
+    reviews: 134,
+    experience: 13,
+    image: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2'%3E%3C/path%3E%3Ccircle cx='12' cy='7' r='4'%3E%3C/circle%3E%3C/svg%3E",
+    availableToday: false,
+    nextAvailable: "Tomorrow, 2:30 PM",
+    consultationFee: 800,
+    location: "Bangalore",
+    about: "Dr. Ravi Nandakumar specializes in dermatologic surgery and has extensive experience in treating complex skin conditions. He is known for his surgical precision.",
+    education: [
+      "MBBS - Bangalore Medical College",
+      "MD (Dermatology) - KEM Hospital, Mumbai",
+      "Diploma in Dermatology - Royal College of Physicians, London"
+    ],
+    languages: ["English", "Hindi", "Kannada"],
+    telemedicine: true,
+  },
+  {
+    id: 8,
+    name: "Dr. Nisha Shetty",
+    specialty: "Dermatology",
+    subspecialty: "Cosmetic Dermatology",
+    hospital: "Sparsh Hospital",
+    rating: 4.8,
+    reviews: 156,
+    experience: 11,
+    image: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2'%3E%3C/path%3E%3Ccircle cx='12' cy='7' r='4'%3E%3C/circle%3E%3C/svg%3E",
+    availableToday: true,
+    nextAvailable: "Today, 5:00 PM",
+    consultationFee: 850,
+    location: "Bangalore",
+    about: "Dr. Nisha Shetty is a cosmetic dermatologist specializing in anti-aging treatments and skin rejuvenation. She is known for her expertise in advanced cosmetic procedures.",
+    education: [
+      "MBBS - Bangalore Medical College",
+      "MD (Dermatology) - KEM Hospital, Mumbai",
+      "Fellowship in Cosmetic Dermatology - American Academy of Dermatology"
+    ],
+    languages: ["English", "Hindi", "Kannada"],
+    telemedicine: true,
+  },
+  {
+    id: 9,
+    name: "Dr. Arvind Krishnan",
+    specialty: "Dermatology",
+    subspecialty: "Dermatopathology",
+    hospital: "Apollo Hospitals",
+    rating: 4.9,
+    reviews: 198,
+    experience: 20,
+    image: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2'%3E%3C/path%3E%3Ccircle cx='12' cy='7' r='4'%3E%3C/circle%3E%3C/svg%3E",
+    availableToday: false,
+    nextAvailable: "Tomorrow, 11:30 AM",
+    consultationFee: 1500,
+    location: "Chennai",
+    about: "Dr. Arvind Krishnan is a senior dermatopathologist with extensive experience in diagnosing complex skin conditions. He is known for his research work in skin cancer.",
+    education: [
+      "MBBS - Madras Medical College",
+      "MD (Dermatology) - AIIMS, Delhi",
+      "Fellowship in Dermatopathology - Harvard Medical School"
+    ],
+    languages: ["English", "Hindi", "Tamil"],
+    telemedicine: true,
+  },
+  {
+    id: 10,
+    name: "Dr. Reema Gupta",
+    specialty: "Dermatology",
+    subspecialty: "Mohs Surgery",
+    hospital: "Fortis Hospital",
+    rating: 4.8,
+    reviews: 167,
+    experience: 15,
+    image: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2'%3E%3C/path%3E%3Ccircle cx='12' cy='7' r='4'%3E%3C/circle%3E%3C/svg%3E",
+    availableToday: true,
+    nextAvailable: "Today, 4:00 PM",
+    consultationFee: 1200,
+    location: "Chennai",
+    about: "Dr. Reema Gupta specializes in Mohs micrographic surgery and skin cancer treatment. She is known for her expertise in treating complex skin cancers.",
+    education: [
+      "MBBS - Madras Medical College",
+      "MD (Dermatology) - AIIMS, Delhi",
+      "Fellowship in Mohs Surgery - Mayo Clinic, USA"
+    ],
+    languages: ["English", "Hindi", "Punjabi"],
+    telemedicine: true,
+  },
+  {
+    id: 11,
+    name: "Dr. Karthik Reddy",
+    specialty: "Dermatology",
+    subspecialty: "Clinical Dermatology",
+    hospital: "KIMS Hospital",
+    rating: 4.7,
+    reviews: 145,
+    experience: 12,
+    image: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2'%3E%3C/path%3E%3Ccircle cx='12' cy='7' r='4'%3E%3C/circle%3E%3C/svg%3E",
+    availableToday: false,
+    nextAvailable: "Tomorrow, 10:00 AM",
+    consultationFee: 750,
+    location: "Hyderabad",
+    about: "Dr. Karthik Reddy specializes in general dermatology and has extensive experience in treating skin infections and allergic conditions.",
+    education: [
+      "MBBS - Osmania Medical College",
+      "MD (Dermatology) - KEM Hospital, Mumbai",
+      "Diploma in Clinical Dermatology - British Association of Dermatologists"
+    ],
+    languages: ["English", "Hindi", "Telugu"],
+    telemedicine: true,
+  },
+  {
+    id: 12,
+    name: "Dr. Sneha Sharma",
+    specialty: "Dermatology",
+    subspecialty: "Cosmetic Dermatology",
+    hospital: "Yashoda Hospitals",
+    rating: 4.8,
+    reviews: 178,
+    experience: 14,
+    image: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2'%3E%3C/path%3E%3Ccircle cx='12' cy='7' r='4'%3E%3C/circle%3E%3C/svg%3E",
+    availableToday: true,
+    nextAvailable: "Today, 3:30 PM",
+    consultationFee: 900,
+    location: "Hyderabad",
+    about: "Dr. Sneha Sharma is a cosmetic dermatologist specializing in anti-aging treatments and skin rejuvenation. She is known for her expertise in advanced cosmetic procedures.",
+    education: [
+      "MBBS - Osmania Medical College",
+      "MD (Dermatology) - KEM Hospital, Mumbai",
+      "Fellowship in Cosmetic Dermatology - American Academy of Dermatology"
+    ],
+    languages: ["English", "Hindi", "Marathi"],
+    telemedicine: true,
+  },
+  {
+    id: 13,
+    name: "Dr. Priya Mehta",
+    specialty: "Dermatology",
+    subspecialty: "Pediatric Dermatology",
+    hospital: "Apollo Hospitals",
+    rating: 4.9,
+    reviews: 189,
+    experience: 16,
+    image: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2'%3E%3C/path%3E%3Ccircle cx='12' cy='7' r='4'%3E%3C/circle%3E%3C/svg%3E",
+    availableToday: false,
+    nextAvailable: "Tomorrow, 2:00 PM",
+    consultationFee: 850,
+    location: "Ahmedabad",
+    about: "Dr. Priya Mehta is a pediatric dermatologist with expertise in treating skin conditions in children. She is known for her gentle approach and effective treatment methods.",
+    education: [
+      "MBBS - BJ Medical College",
+      "MD (Dermatology) - KEM Hospital, Mumbai",
+      "Fellowship in Pediatric Dermatology - Great Ormond Street Hospital, London"
+    ],
+    languages: ["English", "Hindi", "Gujarati"],
+    telemedicine: true,
+  },
+  {
+    id: 14,
+    name: "Dr. Rajiv Bhatia",
+    specialty: "Dermatology",
+    subspecialty: "Dermatopathology",
+    hospital: "Civil Hospital",
+    rating: 4.7,
+    reviews: 156,
+    experience: 19,
+    image: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2'%3E%3C/path%3E%3Ccircle cx='12' cy='7' r='4'%3E%3C/circle%3E%3C/svg%3E",
+    availableToday: true,
+    nextAvailable: "Today, 5:30 PM",
+    consultationFee: 1100,
+    location: "Ahmedabad",
+    about: "Dr. Rajiv Bhatia is a senior dermatopathologist with extensive experience in diagnosing complex skin conditions. He is known for his research work in skin cancer.",
+    education: [
+      "MBBS - BJ Medical College",
+      "MD (Dermatology) - AIIMS, Delhi",
+      "Fellowship in Dermatopathology - Harvard Medical School"
+    ],
+    languages: ["English", "Hindi", "Punjabi"],
+    telemedicine: true,
+  }
 ]
 
 // Generate time slots
@@ -207,23 +431,122 @@ const generateAppointmentId = () => {
   return "APPT-" + Math.random().toString(36).substring(2, 8).toUpperCase()
 }
 
+// Add this component for the info modal
+const DoctorInfoModal = ({ doctor, isOpen, onClose }: { doctor: Doctor; isOpen: boolean; onClose: () => void }) => {
+  const [imageError, setImageError] = useState(false);
+
+  function setSelectedDoctor(doctor: Doctor) {
+    throw new Error("Function not implemented.")
+  }
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <img
+              src={doctor.image}
+              alt={doctor.name}
+              className="w-16 h-16 rounded-full object-cover"
+              onError={(e) => {
+                e.currentTarget.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2'%3E%3C/path%3E%3Ccircle cx='12' cy='7' r='4'%3E%3C/circle%3E%3C/svg%3E";
+              }}
+            />
+            <div>
+              <h3 className="text-xl font-bold">{doctor.name}</h3>
+              <p className="text-sm text-muted-foreground">
+                {doctor.specialty} • {doctor.subspecialty}
+              </p>
+            </div>
+          </DialogTitle>
+        </DialogHeader>
+        
+        <div className="space-y-4">
+          <div className="flex items-center gap-2">
+            <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+            <span className="font-medium">{doctor.rating}</span>
+            <span className="text-sm text-muted-foreground">({doctor.reviews} reviews)</span>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <h4 className="font-medium mb-2">Experience</h4>
+              <p>{doctor.experience} years</p>
+            </div>
+            <div>
+              <h4 className="font-medium mb-2">Languages</h4>
+              <p>{doctor.languages.join(", ")}</p>
+            </div>
+          </div>
+
+          <div>
+            <h4 className="font-medium mb-2">About</h4>
+            <p className="text-sm text-muted-foreground">{doctor.about}</p>
+          </div>
+
+          <div>
+            <h4 className="font-medium mb-2">Education</h4>
+            <ul className="list-disc list-inside text-sm text-muted-foreground">
+              {doctor.education.map((edu, index) => (
+                <li key={index}>{edu}</li>
+              ))}
+            </ul>
+          </div>
+
+          <div>
+            <h4 className="font-medium mb-2">Hospital</h4>
+            <p className="text-sm text-muted-foreground">{doctor.hospital}</p>
+          </div>
+
+          <div>
+            <h4 className="font-medium mb-2">Location</h4>
+            <p className="text-sm text-muted-foreground">{doctor.location}</p>
+          </div>
+
+          <div>
+            <h4 className="font-medium mb-2">Consultation Fee</h4>
+            <p className="text-lg font-bold">₹{doctor.consultationFee}</p>
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>Close</Button>
+          <Button onClick={() => {
+            onClose();
+            setSelectedDoctor(doctor);
+          }}>
+            Book Appointment
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
 export default function AppointmentsPage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedSpecialty, setSelectedSpecialty] = useState("all")
   const [selectedLocation, setSelectedLocation] = useState("all")
-  const [priceRange, setPriceRange] = useState([0, 5000])
+  const [priceRange, setPriceRange] = useState([0, 1500])
   const [onlyTelemedicine, setOnlyTelemedicine] = useState(false)
   const [availableToday, setAvailableToday] = useState(false)
-  const [selectedDoctor, setSelectedDoctor] = useState<any>(null)
+  const [selectedDoctor, setSelectedDoctor] = useState<Doctor | null>(null)
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date())
   const [selectedTimeSlot, setSelectedTimeSlot] = useState<Date | null>(null)
   const [consultationType, setConsultationType] = useState("in-person")
   const [showBookingSuccess, setShowBookingSuccess] = useState(false)
   const [uploadedFiles, setUploadedFiles] = useState<string[]>([])
   const [appointmentId, setAppointmentId] = useState("")
-  const [patientName, setPatientName] = useState("John Doe") // In a real app, get from user profile
-  const [patientEmail, setPatientEmail] = useState("john.doe@example.com") // In a real app, get from user profile
+  const [patientName, setPatientName] = useState("Sabareesh S P") // In a real app, get from user profile
+  const [patientEmail, setPatientEmail] = useState("sabareeshsp7@gmail.com") // In a real app, get from user profile
   const [patientPhone, setPatientPhone] = useState("+91 9876543210") // In a real app, get from user profile
+  const [selectedDoctorInfo, setSelectedDoctorInfo] = useState<Doctor | null>(null)
+
+  // Add medical history context
+  const { addHistory } = useMedicalHistory()
+
+  // Add state for tracking if appointment is saved
+  const [appointmentSaved, setAppointmentSaved] = useState(false)
 
   // Generate available dates and time slots
   const availableDates = generateDates()
@@ -259,9 +582,7 @@ export default function AppointmentsPage() {
 
   const handleBookAppointment = () => {
     if (!selectedTimeSlot) {
-      toast({
-        variant: "destructive",
-        title: "Error",
+      toast.error("Error", {
         description: "Please select a time slot for your appointment.",
       })
       return
@@ -274,6 +595,20 @@ export default function AppointmentsPage() {
     // Simulate booking process
     setTimeout(() => {
       setShowBookingSuccess(true)
+      
+      // Save appointment to medical history (LOCAL ONLY - no Supabase)
+      if (selectedDoctor && selectedTimeSlot && !appointmentSaved) {
+        // Save to local context only
+        const appointmentDisplayData = `Appointment with ${selectedDoctor.name} at ${format(selectedTimeSlot, "h:mm a")} on ${format(selectedTimeSlot, "MMMM d, yyyy")} - ${selectedDoctor.specialty} (${selectedDoctor.subspecialty}) - ${consultationType === "telemedicine" ? "Telemedicine" : "In-Person"} - ID: ${newAppointmentId}`
+        
+        addHistory({
+          type: "Appointment",
+          data: appointmentDisplayData
+        })
+        
+        setAppointmentSaved(true)
+      }
+      
     }, 1000)
   }
 
@@ -284,8 +619,7 @@ export default function AppointmentsPage() {
       const newFiles = Array.from(e.target.files).map((file) => file.name)
       setUploadedFiles([...uploadedFiles, ...newFiles])
 
-      toast({
-        title: "Files uploaded",
+      toast.success("Files uploaded", {
         description: `Successfully uploaded ${newFiles.length} file(s).`,
       })
     }
@@ -299,7 +633,7 @@ export default function AppointmentsPage() {
     // Add header
     doc.setFontSize(20)
     doc.setTextColor(0, 102, 204)
-    doc.text("DermaSense AI", 105, 20, { align: "center" })
+    doc.text("Carcino AI", 105, 20, { align: "center" })
 
     doc.setFontSize(16)
     doc.setTextColor(0, 0, 0)
@@ -365,8 +699,7 @@ export default function AppointmentsPage() {
     // Save the PDF
     doc.save(`Appointment_${appointmentId}.pdf`)
 
-    toast({
-      title: "PDF Generated",
+    toast.info("PDF Generated", {
       description: "Appointment details have been downloaded as a PDF.",
     })
   }
@@ -408,9 +741,9 @@ export default function AppointmentsPage() {
     // Open the Google Calendar in a new tab
     window.open(googleCalendarUrl, "_blank")
 
-    toast({
-      title: "Added to Calendar",
-      description: "Appointment has been added to your Google Calendar.",
+    // Fix the toast notification format to use sonner's format
+    toast.success("Added to Calendar", {
+      description: "Appointment has been added to your Google Calendar."
     })
   }
 
@@ -457,10 +790,10 @@ export default function AppointmentsPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Specialties</SelectItem>
-                  <SelectItem value="Surgical Oncology">Surgical Oncology</SelectItem>
+                  {/* <SelectItem value="Surgical Oncology">Surgical Oncology</SelectItem>
                   <SelectItem value="Medical Oncology">Medical Oncology</SelectItem>
                   <SelectItem value="Dermatologic Oncology">Dermatologic Oncology</SelectItem>
-                  <SelectItem value="Radiation Oncology">Radiation Oncology</SelectItem>
+                  <SelectItem value="Radiation Oncology">Radiation Oncology</SelectItem> */}
                 </SelectContent>
               </Select>
             </div>
@@ -485,7 +818,7 @@ export default function AppointmentsPage() {
           <div className="mt-4 grid gap-4 md:grid-cols-3">
             <div>
               <Label className="mb-2 block">Price Range (₹)</Label>
-              <Slider value={priceRange} min={0} max={5000} step={100} onValueChange={setPriceRange} className="py-4" />
+              <Slider value={priceRange} min={0} max={1500} step={50} onValueChange={setPriceRange} className="py-4" />
               <div className="flex items-center justify-between text-sm">
                 <span>₹{priceRange[0]}</span>
                 <span>₹{priceRange[1]}</span>
@@ -534,10 +867,13 @@ export default function AppointmentsPage() {
                   <CardContent className="p-0">
                     <div className="flex flex-col md:flex-row">
                       <div className="md:w-1/3 bg-muted p-4 flex items-center justify-center">
-                        <img
-                          src={doctor.image || "/placeholder.svg"}
+                      <img
+                          src={doctor.image}
                           alt={doctor.name}
                           className="h-32 w-32 rounded-full object-cover"
+                          onError={(e) => {
+                            e.currentTarget.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2'%3E%3C/path%3E%3Ccircle cx='12' cy='7' r='4'%3E%3C/circle%3E%3C/svg%3E";
+                          }}
                         />
                       </div>
                       <div className="md:w-2/3 p-6">
@@ -549,10 +885,20 @@ export default function AppointmentsPage() {
                             </p>
                             <p className="text-sm">{doctor.hospital}</p>
                           </div>
-                          <div className="flex items-center">
-                            <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                            <span className="ml-1 font-medium">{doctor.rating}</span>
-                            <span className="ml-1 text-sm text-muted-foreground">({doctor.reviews})</span>
+                          <div className="flex items-center gap-2">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => setSelectedDoctorInfo(doctor)}
+                              className="h-8 w-8"
+                            >
+                              <Info className="h-4 w-4" />
+                            </Button>
+                            <div className="flex items-center">
+                              <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                              <span className="ml-1 font-medium">{doctor.rating}</span>
+                              <span className="ml-1 text-sm text-muted-foreground">({doctor.reviews})</span>
+                            </div>
                           </div>
                         </div>
 
@@ -577,9 +923,7 @@ export default function AppointmentsPage() {
                         <div className="mt-4 flex items-center justify-between">
                           <div>
                             <p className="text-sm font-medium">Next Available</p>
-                            <p
-                              className={`text-sm ${doctor.availableToday ? "text-green-600" : "text-muted-foreground"}`}
-                            >
+                            <p className={`text-sm ${doctor.availableToday ? "text-green-600" : "text-muted-foreground"}`}>
                               {doctor.nextAvailable}
                             </p>
                           </div>
@@ -606,9 +950,12 @@ export default function AppointmentsPage() {
                 <CardContent className="space-y-4">
                   <div className="flex items-center gap-4">
                     <img
-                      src={selectedDoctor.image || "/placeholder.svg"}
+                      src={selectedDoctor.image}
                       alt={selectedDoctor.name}
                       className="h-16 w-16 rounded-full object-cover"
+                      onError={(e) => {
+                        e.currentTarget.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2'%3E%3C/path%3E%3Ccircle cx='12' cy='7' r='4'%3E%3C/circle%3E%3C/svg%3E";
+                      }}
                     />
                     <div>
                       <h3 className="font-bold">{selectedDoctor.name}</h3>
@@ -631,12 +978,15 @@ export default function AppointmentsPage() {
                         <input
                           type="radio"
                           id="in-person"
+                          name="consultation-type"
                           value="in-person"
                           checked={consultationType === "in-person"}
                           onChange={() => setConsultationType("in-person")}
                           className="h-4 w-4"
+                          aria-labelledby="in-person-label"
+                          title="In-Person Consultation"
                         />
-                        <Label htmlFor="in-person" className="text-sm font-normal">
+                        <Label htmlFor="in-person" id="in-person-label" className="text-sm font-normal">
                           In-Person
                         </Label>
                       </div>
@@ -645,14 +995,18 @@ export default function AppointmentsPage() {
                         <input
                           type="radio"
                           id="telemedicine"
+                          name="consultation-type"
                           value="telemedicine"
                           checked={consultationType === "telemedicine"}
                           onChange={() => setConsultationType("telemedicine")}
                           className="h-4 w-4"
                           disabled={!selectedDoctor.telemedicine}
+                          aria-labelledby="telemedicine-label"
+                          title="Telemedicine Consultation"
                         />
                         <Label
                           htmlFor="telemedicine"
+                          id="telemedicine-label"
                           className={`text-sm font-normal ${!selectedDoctor.telemedicine ? "text-muted-foreground" : ""}`}
                         >
                           Telemedicine
@@ -780,89 +1134,126 @@ export default function AppointmentsPage() {
         </div>
       </div>
 
-      {/* Booking Success Dialog - Fixed to ensure all buttons stay within the container */}
+      {/* Booking Success Dialog - Improved layout with better containment and alignment */}
       <Dialog open={showBookingSuccess} onOpenChange={setShowBookingSuccess}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
+        <DialogContent className="sm:max-w-md p-0 overflow-hidden">
+          <DialogHeader className="p-6 pb-2">
             <DialogTitle>Appointment Confirmed!</DialogTitle>
             <DialogDescription>Your appointment has been successfully scheduled.</DialogDescription>
           </DialogHeader>
-
-          {selectedDoctor && selectedTimeSlot && (
-            <div className="space-y-4">
-              <div className="rounded-lg bg-muted p-4">
-                <div className="flex items-center gap-4 mb-4">
-                  <img
-                    src={selectedDoctor.image || "/placeholder.svg"}
-                    alt={selectedDoctor.name}
-                    className="h-16 w-16 rounded-full object-cover"
-                  />
-                  <div>
-                    <h3 className="font-bold">{selectedDoctor.name}</h3>
-                    <p className="text-sm text-muted-foreground">{selectedDoctor.specialty}</p>
+          
+          <div className="relative">
+            {/* Close button at top-right */}
+            <button 
+              onClick={() => setShowBookingSuccess(false)}
+              className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+            >
+              <X className="h-4 w-4" />
+              <span className="sr-only">Close</span>
+            </button>
+            
+            {selectedDoctor && selectedTimeSlot && (
+              <div className="px-6 space-y-4">
+                {/* Doctor info card with controlled dimensions */}
+                <div className="rounded-lg bg-muted p-4 flex items-start gap-3">
+                  <div className="w-12 h-12 rounded-full overflow-hidden flex-shrink-0 bg-background">
+                    <img
+                      src={selectedDoctor.image}
+                      alt={selectedDoctor.name}
+                      className="h-12 w-12 object-cover"
+                      onError={(e) => {
+                        e.currentTarget.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2'%3E%3C/path%3E%3Ccircle cx='12' cy='7' r='4'%3E%3C/circle%3E%3C/svg%3E";
+                      }}
+                    />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <h3 className="font-bold text-base">{selectedDoctor.name}</h3>
+                    <p className="text-sm text-muted-foreground">Dermatology</p>
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <Calendar className="h-4 w-4 text-muted-foreground" />
-                    <span>{format(selectedTimeSlot, "EEEE, MMMM d, yyyy")}</span>
+                {/* Appointment details with fixed width icons for alignment */}
+                <div className="space-y-3 py-1">
+                  <div className="flex items-center">
+                    <div className="w-6 flex-shrink-0">
+                      <Calendar className="h-4 w-4 text-muted-foreground" />
+                    </div>
+                    <span className="text-sm">{format(selectedTimeSlot, "EEEE, MMMM d, yyyy")}</span>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Clock className="h-4 w-4 text-muted-foreground" />
-                    <span>{format(selectedTimeSlot, "h:mm a")}</span>
+                  <div className="flex items-center">
+                    <div className="w-6 flex-shrink-0">
+                      <Clock className="h-4 w-4 text-muted-foreground" />
+                    </div>
+                    <span className="text-sm">{format(selectedTimeSlot, "h:mm a")}</span>
                   </div>
-                  <div className="flex items-center gap-2">
-                    {consultationType === "telemedicine" ? (
-                      <>
+                  <div className="flex items-center">
+                    <div className="w-6 flex-shrink-0">
+                      {consultationType === "telemedicine" ? (
                         <Video className="h-4 w-4 text-muted-foreground" />
-                        <span>Telemedicine Consultation</span>
-                      </>
-                    ) : (
-                      <>
+                      ) : (
                         <MapPin className="h-4 w-4 text-muted-foreground" />
-                        <span>
-                          {selectedDoctor.hospital}, {selectedDoctor.location}
-                        </span>
-                      </>
-                    )}
+                      )}
+                    </div>
+                    <span className="text-sm truncate">
+                      {consultationType === "telemedicine" 
+                        ? "Online Video Consultation" 
+                        : `${selectedDoctor.hospital}, ${selectedDoctor.location}`}
+                    </span>
                   </div>
                 </div>
-              </div>
 
-              <div className="flex items-center gap-2 rounded-lg bg-blue-50 dark:bg-blue-900/20 p-4 text-sm">
-                <AlertCircle className="h-4 w-4 text-blue-500" />
-                <p>
-                  {consultationType === "telemedicine"
-                    ? "A link to join the video consultation will be sent to your email and phone 15 minutes before the appointment."
-                    : "Please arrive 15 minutes before your appointment time. Don't forget to bring your medical records and ID proof."}
-                </p>
-              </div>
+                {/* Info box with controlled width */}
+                <div className="flex items-center gap-2 rounded-lg bg-blue-50 dark:bg-blue-900/20 p-3">
+                  <AlertCircle className="h-4 w-4 text-blue-500 flex-shrink-0" />
+                  <p className="text-xs text-blue-700 dark:text-blue-300">
+                    Please arrive 15 minutes before your appointment time. Don't forget to bring your medical records and ID proof.
+                  </p>
+                </div>
 
-              <div className="flex flex-col gap-2">
-                <p className="text-sm font-medium">
-                  Appointment ID: <span className="font-bold">{appointmentId}</span>
-                </p>
-                <p className="text-xs text-muted-foreground">Please save this ID for future reference</p>
+                {/* Appointment ID with controlled spacing */}
+                <div className="mt-2">
+                  <p className="text-sm font-semibold">Appointment ID: <span className="font-mono select-all">{appointmentId}</span></p>
+                  <p className="text-xs text-muted-foreground">Please save this ID for future reference</p>
+                </div>
+
+                {/* Confirmation message for saved appointment */}
+                {appointmentSaved && (
+                  <div className="flex items-center gap-2 rounded-lg bg-green-50 dark:bg-green-900/20 p-3">
+                    <Check className="h-4 w-4 text-green-500 flex-shrink-0" />
+                    <p className="text-xs text-green-700 dark:text-green-300">
+                      ✔ Saved to medical history
+                    </p>
+                  </div>
+                )}
               </div>
+            )}
+
+            {/* Footer with fixed height and spacing */}
+            <div className="border-t mt-4 p-4 flex flex-row gap-2 justify-end bg-muted/50">
+              <Button variant="outline" size="sm" onClick={() => setShowBookingSuccess(false)}>
+                Close
+              </Button>
+              <Button variant="outline" size="sm" onClick={generateAppointmentPDF}>
+                <Download className="mr-1.5 h-3.5 w-3.5" />
+                Download PDF
+              </Button>
+              <Button size="sm" onClick={addToGoogleCalendar}>
+                <Calendar className="mr-1.5 h-3.5 w-3.5" />
+                Add to Calendar
+              </Button>
             </div>
-          )}
-
-          <DialogFooter className="flex-col sm:flex-row gap-2 mt-4">
-            <Button variant="outline" className="sm:flex-1" onClick={() => setShowBookingSuccess(false)}>
-              Close
-            </Button>
-            <Button className="sm:flex-1" onClick={generateAppointmentPDF}>
-              <Download className="mr-2 h-4 w-4" />
-              Download PDF
-            </Button>
-            <Button className="sm:flex-1" onClick={addToGoogleCalendar}>
-              <Calendar className="mr-2 h-4 w-4" />
-              Add to Calendar
-            </Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
+
+      {/* Doctor Info Modal */}
+      {selectedDoctorInfo && (
+        <DoctorInfoModal
+          doctor={selectedDoctorInfo}
+          isOpen={!!selectedDoctorInfo}
+          onClose={() => setSelectedDoctorInfo(null)}
+        />
+      )}
     </div>
   )
 }

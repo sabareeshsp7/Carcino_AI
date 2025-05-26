@@ -38,7 +38,7 @@ import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
-import { toast } from "@/components/ui/use-toast"
+import { toast } from "sonner"
 import { SimpleEditor } from "@/components/editor/simple-editor"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 
@@ -292,9 +292,7 @@ export default function CommunityPage() {
 
   const handleCreatePost = () => {
     if (!newPostTitle.trim() || !newPostContent.trim()) {
-      toast({
-        variant: "destructive",
-        title: "Error",
+      toast.error("Error", {
         description: "Please provide both a title and content for your post.",
       })
       return
@@ -329,8 +327,7 @@ export default function CommunityPage() {
       setIsAnonymous(false)
       setIsSubmitting(false)
 
-      toast({
-        title: "Post created",
+      toast.success("Post created", {
         description: "Your post has been published successfully.",
       })
     }, 1000)
@@ -373,8 +370,7 @@ export default function CommunityPage() {
 
       setIsSubmitting(false)
 
-      toast({
-        title: "Comment added",
+      toast.success("Comment added", {
         description: "Your comment has been added successfully.",
       })
     }, 500)
@@ -407,12 +403,9 @@ export default function CommunityPage() {
       }),
     )
 
-    toast({
-      title: "Post interaction",
-      description: posts.find((p) => p.id === postId)?.likedBy.includes(currentUserId)
-        ? "You unliked this post."
-        : "You liked this post.",
-    })
+    posts.find((p) => p.id === postId)?.likedBy.includes(currentUserId)
+      ? toast.info("You unliked this post.")
+      : toast.success("You liked this post.");
   }
 
   const handleLikeComment = (commentId: number) => {
@@ -477,15 +470,13 @@ export default function CommunityPage() {
   }
 
   const handleReportPost = (postId: number) => {
-    toast({
-      title: "Post reported",
+    toast.info("Post reported", {
       description: `Thank you for reporting post #${postId}. Our moderators will review it.`,
     })
   }
 
   const handleReportComment = (commentId: number) => {
-    toast({
-      title: "Comment reported",
+    toast.info("Comment reported", {
       description: `Thank you for reporting comment #${commentId}. Our moderators will review it.`,
     })
   }
@@ -1060,7 +1051,6 @@ export default function CommunityPage() {
                     return acc
                   }, [])}
                 </div>
-
                 <Button className="w-full" variant="outline" onClick={() => window.open(selectedArticle.url, "_blank")}>
                   Read Full Article <ExternalLink className="ml-2 h-4 w-4" />
                 </Button>

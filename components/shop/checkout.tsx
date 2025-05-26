@@ -24,7 +24,7 @@ const formSchema = z.object({
 })
 
 interface CheckoutProps {
-  cart: { id: string; name: string; image: string; quantity: number; price: number }[]
+  cart: any[]
   total: number
   onSuccess: () => void
 }
@@ -40,10 +40,11 @@ export function Checkout({ cart, total, onSuccess }: CheckoutProps) {
     },
   })
 
-  async function onSubmit() {
+  async function onSubmit(values: z.infer<typeof formSchema>) {
     try {
       setLoading(true)
       // Here you would typically make an API call to process the order
+      console.log("Processing order with values:", values);
       await new Promise((resolve) => setTimeout(resolve, 2000)) // Simulate API call
       toast({
         title: "Order placed successfully!",
@@ -51,7 +52,8 @@ export function Checkout({ cart, total, onSuccess }: CheckoutProps) {
       })
       onSuccess()
       router.push("/dashboard/orders")
-    } catch {
+    } catch (error) {
+      console.error("Checkout error:", error);
       toast({
         variant: "destructive",
         title: "Error",
