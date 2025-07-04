@@ -10,11 +10,11 @@ import { useForm } from "react-hook-form"
 import * as z from "zod"
 
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
-import { toast } from "@/components/ui/use-toast"
+import { toast } from "sonner"
 import { useCart } from "@/contexts/cart-context"
 
 // Dynamically import the Map component to avoid SSR issues with Leaflet
@@ -34,22 +34,27 @@ const formSchema = z.object({
 })
 
 export default function CartPage() {
+  // Fix: Use the correct properties from cart context
   const {
-    items,
+    cartItems,
+    cartCount,
+    cartTotal,
     updateQuantity,
     removeItem,
-    subtotal,
-    total,
     clearCart,
-    discount,
-    setDiscount,
-    voucherCode,
-    setVoucherCode,
-    deliveryAddress,
-    setDeliveryAddress,
   } = useCart()
+  
+  // State for additional cart functionality
+  const [discount, setDiscount] = useState(0)
+  const [voucherCode, setVoucherCode] = useState("")
+  const [deliveryAddress, setDeliveryAddress] = useState<any>(null)
   const [selectedLocation, setSelectedLocation] = useState<{ lat: number; lng: number } | null>(null)
   const router = useRouter()
+
+  // Calculate subtotal and total
+  const subtotal = cartTotal || 0
+  const shipping = 50
+  const total = subtotal - discount + shipping
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -85,20 +90,16 @@ export default function CartPage() {
   const applyVoucher = () => {
     if (voucherCode.toLowerCase() === "derma10") {
       setDiscount(subtotal * 0.1)
-      toast({
-        title: "Voucher applied",
+      toast.success("Voucher applied", {
         description: "10% discount has been applied to your order.",
       })
     } else if (voucherCode.toLowerCase() === "derma20") {
       setDiscount(subtotal * 0.2)
-      toast({
-        title: "Voucher applied",
+      toast.success("Voucher applied", {
         description: "20% discount has been applied to your order.",
       })
     } else {
-      toast({
-        variant: "destructive",
-        title: "Invalid voucher",
+      toast.error("Invalid voucher", {
         description: "The voucher code you entered is invalid.",
       })
     }
@@ -106,18 +107,26 @@ export default function CartPage() {
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     if (!selectedLocation) {
-      toast({
-        variant: "destructive",
-        title: "Location required",
+      toast.error("Location required", {
         description: "Please select your delivery location on the map.",
       })
       return
     }
 
-    setDeliveryAddress({
+    const addressData = {
       ...values,
       coordinates: selectedLocation,
-    })
+    }
+
+    setDeliveryAddress(addressData)
+    
+    // Fix: Save to sessionStorage for payment page
+    try {
+      sessionStorage.setItem("deliveryAddress", JSON.stringify(addressData))
+      localStorage.setItem("deliveryAddress", JSON.stringify(addressData))
+    } catch (error) {
+      console.error("Error saving delivery address:", error)
+    }
 
     router.push("/dashboard/payment")
   }
@@ -132,7 +141,7 @@ export default function CartPage() {
         {
           headers: {
             Accept: "application/json",
-            "User-Agent": "DermaSense AI Application",
+            "User-Agent": "Carcino AI Application",
           },
         },
       )
@@ -174,22 +183,20 @@ export default function CartPage() {
           form.setValue("pincode", address.postcode)
         }
 
-        toast({
-          title: "Address updated",
+        toast.success("Address updated", {
           description: "Location details have been filled automatically.",
         })
       }
     } catch (error) {
       console.error("Error fetching address:", error)
-      toast({
-        variant: "destructive",
-        title: "Address lookup failed",
+      toast.error("Address lookup failed", {
         description: "Could not retrieve address details. Please fill them manually.",
       })
     }
   }
 
-  if (items.length === 0) {
+  // Fix: Use cartItems instead of items and add proper null checking
+  if (!cartItems || cartItems.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-12">
         <h1 className="text-2xl font-bold">Your cart is empty</h1>
@@ -219,12 +226,15 @@ export default function CartPage() {
           <CardDescription>Review and modify your cart items</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          {items.map((item) => {
-            const itemPrice = item.discount ? (item.price * (100 - item.discount)) / 100 : item.price
+          {cartItems.map((item, index) => {
+            // Calculate item price (assuming no discount field in cart context)
+            const itemPrice = item.price
+            // Fix: Use unique key combining id and index to prevent duplicate keys
+            const uniqueKey = `${item.id}-${index}`
 
             return (
               <motion.div
-                key={item.id}
+                key={uniqueKey}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -20 }}
@@ -237,10 +247,10 @@ export default function CartPage() {
                   <h3 className="font-medium">{item.name}</h3>
                   <div className="flex items-center gap-2">
                     <p className="text-sm font-bold">₹{itemPrice.toFixed(2)}</p>
-                    {item.discount && (
-                      <p className="text-xs text-muted-foreground line-through">₹{item.price.toFixed(2)}</p>
-                    )}
                   </div>
+                  {item.description && (
+                    <p className="text-sm text-muted-foreground line-clamp-2">{item.description}</p>
+                  )}
                 </div>
                 <div className="flex items-center gap-2">
                   <Button
@@ -296,7 +306,7 @@ export default function CartPage() {
         <CardContent className="space-y-4">
           <div className="space-y-2">
             <div className="flex justify-between">
-              <span>Subtotal</span>
+              <span>Subtotal ({cartCount} items)</span>
               <span>₹{subtotal.toFixed(2)}</span>
             </div>
             {discount > 0 && (
@@ -307,7 +317,7 @@ export default function CartPage() {
             )}
             <div className="flex justify-between">
               <span>Shipping</span>
-              <span>₹50.00</span>
+              <span>₹{shipping.toFixed(2)}</span>
             </div>
             <Separator />
             <div className="flex justify-between font-bold">
@@ -442,4 +452,3 @@ export default function CartPage() {
     </div>
   )
 }
-

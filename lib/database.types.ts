@@ -73,35 +73,30 @@ export interface Database {
           updated_at?: string
         }
       }
-      medical_histories: {
+      medical_history: {
         Row: {
-          id: string;
-  user_id: string;
-  type: string;
-  data: string;
-  date: string;
+          id: string
+          user_id: string
+          type: 'Appointment' | 'Medicine' | 'Analysis'
+          data: string
+          details: Json
+          created_at: string
         }
         Insert: {
           id?: string
           user_id: string
-          condition_name: string
-          diagnosis_date: string
-          treatment?: string | null
-          status: string
-          notes?: string | null
+          type: 'Appointment' | 'Medicine' | 'Analysis'
+          data: string
+          details?: Json
           created_at?: string
-          updated_at?: string
         }
         Update: {
           id?: string
           user_id?: string
-          condition_name?: string
-          diagnosis_date?: string
-          treatment?: string | null
-          status?: string
-          notes?: string | null
+          type?: 'Appointment' | 'Medicine' | 'Analysis'
+          data?: string
+          details?: Json
           created_at?: string
-          updated_at?: string
         }
       }
     }

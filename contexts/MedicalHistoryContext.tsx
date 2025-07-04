@@ -1,18 +1,22 @@
 // context/MedicalHistoryContext.tsx
+// Revert to original localStorage-only implementation
 "use client";
 
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 
-type HistoryItem = {
+export interface HistoryItem {
   id: string;
   type: "Appointment" | "Medicine" | "Analysis";
   data: string;
+  details?: any;
   date: string;
-};
+}
 
 type MedicalHistoryContextType = {
   history: HistoryItem[];
   addHistory: (item: Omit<HistoryItem, "id" | "date">) => void;
+  refreshHistory: () => void;
+  isLoading: boolean;
 };
 
 const MedicalHistoryContext = createContext<MedicalHistoryContextType | undefined>(undefined);
@@ -25,31 +29,52 @@ export const useMedicalHistory = () => {
 
 export const MedicalHistoryProvider = ({ children }: { children: ReactNode }) => {
   const [history, setHistory] = useState<HistoryItem[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
   // Load history from localStorage on mount
   useEffect(() => {
-    const saved = localStorage.getItem("medical-history");
-    if (saved) {
-      setHistory(JSON.parse(saved));
-    }
-  }, []);
+    const loadHistory = () => {
+      setIsLoading(true);
+      try {
+        const saved = localStorage.getItem("medical-history");
+        if (saved) {
+          setHistory(JSON.parse(saved));
+        }
+      } catch (error) {
+        console.error("Error loading history:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
-  // Save history to localStorage whenever it changes
-  useEffect(() => {
-    localStorage.setItem("medical-history", JSON.stringify(history));
-  }, [history]);
+    loadHistory();
+  }, []);
 
   const addHistory = (item: Omit<HistoryItem, "id" | "date">) => {
     const newItem: HistoryItem = {
       ...item,
       id: Math.random().toString(36).substring(2, 9),
-      date: new Date().toLocaleString(),
+      date: new Date().toISOString(),
     };
-    setHistory((prev) => [...prev, newItem]);
+
+    const updatedHistory = [newItem, ...history];
+    setHistory(updatedHistory);
+    localStorage.setItem("medical-history", JSON.stringify(updatedHistory));
+  };
+
+  const refreshHistory = () => {
+    const saved = localStorage.getItem("medical-history");
+    if (saved) {
+      try {
+        setHistory(JSON.parse(saved));
+      } catch (error) {
+        console.error("Error refreshing history:", error);
+      }
+    }
   };
 
   return (
-    <MedicalHistoryContext.Provider value={{ history, addHistory }}>
+    <MedicalHistoryContext.Provider value={{ history, addHistory, refreshHistory, isLoading }}>
       {children}
     </MedicalHistoryContext.Provider>
   );

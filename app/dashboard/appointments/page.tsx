@@ -2,23 +2,31 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react";
 import {
   Calendar,
   Clock,
-  Filter,
+  User,
+  Phone,
   MapPin,
+  Filter,
   Search,
+  Plus,
+  Eye,
+  Edit,
+  Trash2,
+  CheckCircle,
+  XCircle,
+  Bell,
   Star,
   Video,
   Upload,
   Check,
-  AlertCircle,
-  Bell,
   Stethoscope,
-  Download,
-  Info,
   X,
+  AlertCircle,
+  Download,
+  Info
 } from "lucide-react"
 import { format, addDays } from "date-fns"
 import { jsPDF } from "jspdf"
@@ -28,16 +36,15 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Slider } from "@/components/ui/slider"
+// import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch"
 import { Badge } from "@/components/ui/badge"
+import { Slider } from "@/components/ui/slider"
+import { toast } from "@/components/ui/use-toast"
 import { cn } from "@/lib/utils"
-import { toast } from "sonner"
+import { useMedicalHistory } from "@/contexts/MedicalHistoryContext";
 
-// Add this import for medical history context
-import { useMedicalHistory } from "@/contexts/MedicalHistoryContext"
-
-// Define the Doctor interface
+// Add the Doctor interface
 interface Doctor {
   id: number;
   name: string;
@@ -58,35 +65,35 @@ interface Doctor {
   telemedicine: boolean;
 }
 
-// Update the doctors array with correct image links
-const doctors: Doctor[] = [
+// Sample data for doctors
+const doctors = [
   {
     id: 1,
-    name: "Dr. Meera Iyer",
-    specialty: "Dermatology",
-    subspecialty: "Cosmetic Dermatology",
-    hospital: "Apollo Hospitals",
-    rating: 4.8,
-    reviews: 156,
+    name: "Dr. Priya Sharma",
+    specialty: "Surgical Oncology",
+    subspecialty: "Melanoma",
+    hospital: "City Cancer Institute",
+    rating: 4.9,
+    reviews: 124,
     experience: 15,
-    image: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2'%3E%3C/path%3E%3Ccircle cx='12' cy='7' r='4'%3E%3C/circle%3E%3C/svg%3E",
+    image: "/placeholder.svg?height=150&width=150",
     availableToday: true,
     nextAvailable: "Today, 2:00 PM",
-    consultationFee: 800,
+    consultationFee: 1500,
     location: "Mumbai",
-    about: "Dr. Meera Iyer is a renowned dermatologist with expertise in cosmetic dermatology and skin cancer treatment. She has successfully treated over 5000 patients and is known for her patient-centric approach.",
+    about:
+      "Dr. Sharma is a renowned surgical oncologist specializing in melanoma and other skin cancers. She has performed over 1000 successful surgeries and is known for her patient-centered approach to care.",
     education: [
-      "MBBS - Grant Medical College, Mumbai",
-      "MD (Dermatology) - KEM Hospital, Mumbai",
-      "Fellowship in Cosmetic Dermatology - American Academy of Dermatology"
+      "MD in Surgical Oncology, All India Institute of Medical Sciences",
+      "Fellowship in Melanoma Surgery, Memorial Sloan Kettering Cancer Center, USA",
     ],
-    languages: ["English", "Hindi", "Tamil"],
+    languages: ["English", "Hindi", "Marathi"],
     telemedicine: true,
   },
   {
     id: 2,
-    name: "Dr. Rohan Desai",
-    specialty: "Dermatology",
+    name: "Dr. Rajiv Mehta",
+    specialty: "Medical Oncology",
     subspecialty: "Skin Cancer",
     hospital: "Fortis Hospital",
     rating: 4.7,

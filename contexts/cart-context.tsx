@@ -1,215 +1,133 @@
 "use client"
 
-import type React from "react"
+import { createContext, useContext, useEffect, useState, ReactNode } from "react"
 
-import { createContext, useContext, useEffect, useState } from "react"
-
-interface CartItem {
-  id: number
+export interface CartProduct {
+  id: string
   name: string
   price: number
-  image: string
   quantity: number
-  discount?: number
-}
-
-interface DeliveryAddress {
-  name: string
-  email: string
-  phone: string
-  address: string
-  city: string
-  state: string
-  pincode: string
-  coordinates?: {
-    lat: number
-    lng: number
-  }
+  image?: string
+  description?: string
 }
 
 interface CartContextType {
-  items: CartItem[]
-  addItem: (product: any) => void
-  removeItem: (id: number) => void
-  updateQuantity: (id: number, quantity: number) => void
+  cartItems: CartProduct[]
+  cartCount: number
+  cartTotal: number
+  addItem: (product: Omit<CartProduct, "quantity">, quantity?: number) => void
+  removeItem: (productId: string) => void
+  updateQuantity: (productId: string, quantity: number) => void
   clearCart: () => void
-  subtotal: number
-  total: number
-  itemCount: number
-  discount: number
-  setDiscount: (amount: number) => void
-  deliveryAddress: DeliveryAddress | null
-  setDeliveryAddress: (address: DeliveryAddress) => void
-  voucherCode: string
-  setVoucherCode: (code: string) => void
+  isInCart: (productId: string) => boolean
 }
 
-const CartContext = createContext<CartContextType>({
-  items: [],
-  addItem: () => {},
-  removeItem: () => {},
-  updateQuantity: () => {},
-  clearCart: () => {},
-  subtotal: 0,
-  total: 0,
-  itemCount: 0,
-  discount: 0,
-  setDiscount: () => {},
-  deliveryAddress: null,
-  setDeliveryAddress: () => {},
-  voucherCode: "",
-  setVoucherCode: () => {},
-})
+const CartContext = createContext<CartContextType | undefined>(undefined)
 
-export function CartProvider({ children }: { children: React.ReactNode }) {
-  const [items, setItems] = useState<CartItem[]>([])
-  const [discount, setDiscount] = useState(0)
-  const [deliveryAddress, setDeliveryAddress] = useState<DeliveryAddress | null>(null)
-  const [voucherCode, setVoucherCode] = useState("")
+export const useCart = () => {
+  const context = useContext(CartContext)
+  if (!context) {
+    throw new Error("useCart must be used within a CartProvider")
+  }
+  return context
+}
 
+export const CartProvider = ({ children }: { children: ReactNode }) => {
+  const [cartItems, setCartItems] = useState<CartProduct[]>([])
+
+  // Load cart from localStorage on mount
   useEffect(() => {
-    // Only run on client side
-    if (typeof window !== "undefined") {
-      const savedCart = localStorage.getItem("cart")
-      if (savedCart) {
-        try {
-          setItems(JSON.parse(savedCart))
-        } catch (e) {
-          console.error("Error parsing cart data:", e)
-          localStorage.removeItem("cart")
-        }
+    try {
+      const saved = localStorage.getItem("dermasense-cart")
+      if (saved) {
+        setCartItems(JSON.parse(saved))
       }
-
-      const savedAddress = localStorage.getItem("deliveryAddress")
-      if (savedAddress) {
-        try {
-          setDeliveryAddress(JSON.parse(savedAddress))
-        } catch (e) {
-          console.error("Error parsing address data:", e)
-          localStorage.removeItem("deliveryAddress")
-        }
-      }
-
-      const savedDiscount = localStorage.getItem("cartDiscount")
-      if (savedDiscount) {
-        try {
-          setDiscount(Number.parseFloat(savedDiscount))
-        } catch (e) {
-          console.error("Error parsing discount data:", e)
-          localStorage.removeItem("cartDiscount")
-        }
-      }
-
-      const savedVoucher = localStorage.getItem("voucherCode")
-      if (savedVoucher) {
-        setVoucherCode(savedVoucher)
-      }
+    } catch (error) {
+      console.error("Error loading cart:", error)
     }
   }, [])
 
+  // Save to localStorage whenever cart changes
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      localStorage.setItem("cart", JSON.stringify(items))
+    try {
+      localStorage.setItem("dermasense-cart", JSON.stringify(cartItems))
+    } catch (error) {
+      console.error("Error saving cart:", error)
     }
-  }, [items])
+  }, [cartItems])
 
-  useEffect(() => {
-    if (typeof window !== "undefined" && deliveryAddress) {
-      localStorage.setItem("deliveryAddress", JSON.stringify(deliveryAddress))
-    }
-  }, [deliveryAddress])
-
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      localStorage.setItem("cartDiscount", discount.toString())
-    }
-  }, [discount])
-
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      localStorage.setItem("voucherCode", voucherCode)
-    }
-  }, [voucherCode])
-
-  const addItem = (product: any) => {
-    setItems((prevItems) => {
-      const existingItem = prevItems.find((item) => item.id === product.id)
-
+  const addItem = (product: Omit<CartProduct, "quantity">, quantity: number = 1) => {
+    setCartItems(prev => {
+      const existingItem = prev.find(item => item.id === product.id)
+      
       if (existingItem) {
-        return prevItems.map((item) => (item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item))
+        return prev.map(item =>
+          item.id === product.id
+            ? { ...item, quantity: item.quantity + quantity }
+            : item
+        )
       }
-
-      return [
-        ...prevItems,
-        {
-          id: product.id,
-          name: product.name,
-          price: product.price,
-          image: product.image || "/placeholder.svg",
-          quantity: 1,
-          discount: product.discount,
-        },
-      ]
+      
+      return [...prev, { ...product, quantity }]
     })
   }
 
-  const removeItem = (id: number) => {
-    setItems((prevItems) => prevItems.filter((item) => item.id !== id))
+  const removeItem = (productId: string) => {
+    setCartItems(prev => prev.filter(item => item.id !== productId))
   }
 
-  const updateQuantity = (id: number, quantity: number) => {
-    if (quantity < 1) {
-      removeItem(id)
+  const updateQuantity = (productId: string, quantity: number) => {
+    if (quantity <= 0) {
+      removeItem(productId)
       return
     }
-
-    setItems((prevItems) => prevItems.map((item) => (item.id === id ? { ...item, quantity } : item)))
+    
+    setCartItems(prev =>
+      prev.map(item =>
+        item.id === productId ? { ...item, quantity } : item
+      )
+    )
   }
 
   const clearCart = () => {
-    setItems([])
-    setDiscount(0)
-    setVoucherCode("")
-    if (typeof window !== "undefined") {
-      localStorage.removeItem("cart")
-      localStorage.removeItem("cartDiscount")
-      localStorage.removeItem("voucherCode")
-    }
+    setCartItems([])
   }
 
-  const subtotal = items.reduce((total, item) => {
-    const itemPrice = item.discount ? (item.price * (100 - item.discount)) / 100 : item.price
-    return total + itemPrice * item.quantity
-  }, 0)
+  const isInCart = (productId: string) => {
+    return cartItems.some(item => item.id === productId)
+  }
 
-  const shipping = items.length > 0 ? 50 : 0
-  const total = subtotal + shipping - discount
+  const cartCount = cartItems.reduce((total, item) => total + item.quantity, 0)
+  const cartTotal = cartItems.reduce((total, item) => total + (item.price * item.quantity), 0)
 
-  const itemCount = items.reduce((count, item) => count + item.quantity, 0)
+  const value = {
+    cartItems,
+    cartCount,
+    cartTotal,
+    addItem,
+    removeItem,
+    updateQuantity,
+    clearCart,
+    isInCart,
+  }
 
   return (
-    <CartContext.Provider
-      value={{
-        items,
-        addItem,
-        removeItem,
-        updateQuantity,
-        clearCart,
-        subtotal,
-        total,
-        itemCount,
-        discount,
-        setDiscount,
-        deliveryAddress,
-        setDeliveryAddress,
-        voucherCode,
-        setVoucherCode,
-      }}
-    >
+    <CartContext.Provider value={value}>
       {children}
     </CartContext.Provider>
   )
 }
 
-export const useCart = () => useContext(CartContext)
+// This component should be moved to a separate file, not defined in the context file
+export default function ShopPage() {
+  // Example of using cart functionality
+  const { cartItems } = useCart()
+  
+  return (
+    <div>
+      <p>Number of items in cart: {cartItems.length}</p>
+      {/* ...rest of your component code... */}
+    </div>
+  )
+}
 
