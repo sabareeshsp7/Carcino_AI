@@ -14,7 +14,7 @@ import { toast } from "@/components/ui/use-toast"
 import { supabase } from "@/lib/supabase"
 import { Input } from "@/components/ui/input"
 
-export function DashboardHeader({ user }: { user: any }) {
+export function DashboardHeader({ user }: { user: { name?: string; email?: string; image?: string; user_metadata?: { avatar_url?: string } } | null }) {
   const router = useRouter()
   const [searchQuery, setSearchQuery] = useState("")
 

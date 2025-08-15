@@ -110,7 +110,7 @@ type PredictionResult = {
   }
 }
 
-export function ImageAnalyzer() {
+export default function ImageAnalyzer() {
   const [selectedImage, setSelectedImage] = useState<string | null>(null)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [fileName, setFileName] = useState<string>("")

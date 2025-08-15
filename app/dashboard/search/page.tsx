@@ -114,16 +114,8 @@ export default function SearchPage() {
     if (!dateString) return "Unknown date"
     try {
       return format(new Date(dateString), "MMM d, yyyy")
-    } catch (e) {
+    } catch {
       return "Unknown date"
-    }
-  }
-
-  const getDomainFromUrl = (url: string) => {
-    try {
-      return new URL(url).hostname.replace("www.", "")
-    } catch (e) {
-      return url
     }
   }
 
@@ -278,7 +270,7 @@ export default function SearchPage() {
           ) : results.length > 0 ? (
             <div className="space-y-6">
               <p className="text-sm text-muted-foreground">
-                Showing {results.length} results for "{query}"
+                Showing {results.length} results for &quot;{query}&quot;
               </p>
 
               {results.map((result, index) => (
@@ -316,7 +308,7 @@ export default function SearchPage() {
             </div>
           ) : query ? (
             <div className="text-center py-12">
-              <p className="text-muted-foreground">No results found for "{query}"</p>
+              <p className="text-muted-foreground">No results found for &quot;{query}&quot;</p>
             </div>
           ) : null}
         </div>

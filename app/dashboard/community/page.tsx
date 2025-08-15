@@ -335,11 +335,7 @@ export default function CommunityPage() {
 
   const handleAddComment = (postId: number) => {
     if (!newCommentContent.trim()) {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Please provide content for your comment.",
-      })
+      toast.error("Please provide content for your comment.")
       return
     }
 
@@ -403,9 +399,12 @@ export default function CommunityPage() {
       }),
     )
 
-    posts.find((p) => p.id === postId)?.likedBy.includes(currentUserId)
-      ? toast.info("You unliked this post.")
-      : toast.success("You liked this post.");
+    const post = posts.find((p) => p.id === postId);
+    if (post?.likedBy.includes(currentUserId)) {
+      toast.info("You unliked this post.");
+    } else {
+      toast.success("You liked this post.");
+    }
   }
 
   const handleLikeComment = (commentId: number) => {
@@ -435,12 +434,11 @@ export default function CommunityPage() {
       }),
     )
 
-    toast({
-      title: "Comment interaction",
-      description: comments.find((c) => c.id === commentId)?.likedBy.includes(currentUserId)
-        ? "You unliked this comment."
-        : "You liked this comment.",
-    })
+    const comment = comments.find((c) => c.id === commentId);
+    const message = comment?.likedBy.includes(currentUserId)
+      ? "You unliked this comment."
+      : "You liked this comment.";
+    toast.success(message);
   }
 
   const handleSharePost = (postId: number) => {
@@ -462,10 +460,7 @@ export default function CommunityPage() {
         })
     } else {
       navigator.clipboard.writeText(`${shareText}\n${shareUrl}`)
-      toast({
-        title: "Link copied",
-        description: "Post link copied to clipboard.",
-      })
+      toast.success("Post link copied to clipboard.")
     }
   }
 

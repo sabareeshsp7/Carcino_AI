@@ -2,21 +2,13 @@
 
 import type React from "react"
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import {
   Calendar,
   Clock,
-  User,
-  Phone,
   MapPin,
   Filter,
   Search,
-  Plus,
-  Eye,
-  Edit,
-  Trash2,
-  CheckCircle,
-  XCircle,
   Bell,
   Star,
   Video,
@@ -40,7 +32,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch"
 import { Badge } from "@/components/ui/badge"
 import { Slider } from "@/components/ui/slider"
-import { toast } from "@/components/ui/use-toast"
+import { toast } from "sonner"
 import { cn } from "@/lib/utils"
 import { useMedicalHistory } from "@/contexts/MedicalHistoryContext";
 
@@ -439,12 +431,7 @@ const generateAppointmentId = () => {
 }
 
 // Add this component for the info modal
-const DoctorInfoModal = ({ doctor, isOpen, onClose }: { doctor: Doctor; isOpen: boolean; onClose: () => void }) => {
-  const [imageError, setImageError] = useState(false);
-
-  function setSelectedDoctor(doctor: Doctor) {
-    throw new Error("Function not implemented.")
-  }
+const DoctorInfoModal = ({ doctor, isOpen, onClose, onSelectDoctor }: { doctor: Doctor; isOpen: boolean; onClose: () => void; onSelectDoctor: (doctor: Doctor) => void }) => {
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -520,7 +507,7 @@ const DoctorInfoModal = ({ doctor, isOpen, onClose }: { doctor: Doctor; isOpen: 
           <Button variant="outline" onClick={onClose}>Close</Button>
           <Button onClick={() => {
             onClose();
-            setSelectedDoctor(doctor);
+            onSelectDoctor(doctor);
           }}>
             Book Appointment
           </Button>
@@ -544,9 +531,9 @@ export default function AppointmentsPage() {
   const [showBookingSuccess, setShowBookingSuccess] = useState(false)
   const [uploadedFiles, setUploadedFiles] = useState<string[]>([])
   const [appointmentId, setAppointmentId] = useState("")
-  const [patientName, setPatientName] = useState("Sabareesh S P") // In a real app, get from user profile
-  const [patientEmail, setPatientEmail] = useState("sabareeshsp7@gmail.com") // In a real app, get from user profile
-  const [patientPhone, setPatientPhone] = useState("+91 9876543210") // In a real app, get from user profile
+  const [patientName] = useState("Sabareesh S P") // In a real app, get from user profile
+  const [patientEmail] = useState("sabareeshsp7@gmail.com") // In a real app, get from user profile
+  const [patientPhone] = useState("+91 9876543210") // In a real app, get from user profile
   const [selectedDoctorInfo, setSelectedDoctorInfo] = useState<Doctor | null>(null)
 
   // Add medical history context
@@ -1213,7 +1200,7 @@ export default function AppointmentsPage() {
                 <div className="flex items-center gap-2 rounded-lg bg-blue-50 dark:bg-blue-900/20 p-3">
                   <AlertCircle className="h-4 w-4 text-blue-500 flex-shrink-0" />
                   <p className="text-xs text-blue-700 dark:text-blue-300">
-                    Please arrive 15 minutes before your appointment time. Don't forget to bring your medical records and ID proof.
+                    Please arrive 15 minutes before your appointment time. Don&apos;t forget to bring your medical records and ID proof.
                   </p>
                 </div>
 
@@ -1259,6 +1246,7 @@ export default function AppointmentsPage() {
           doctor={selectedDoctorInfo}
           isOpen={!!selectedDoctorInfo}
           onClose={() => setSelectedDoctorInfo(null)}
+          onSelectDoctor={setSelectedDoctor}
         />
       )}
     </div>

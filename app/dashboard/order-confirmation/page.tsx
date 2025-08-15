@@ -26,7 +26,16 @@ interface OrderData {
   shipping: number
   tax: number
   paymentMethod: string
-  deliveryAddress: any
+  deliveryAddress: {
+    name: string
+    address: string
+    city: string
+    state?: string
+    zipCode: string
+    pincode?: string
+    phone: string
+    email?: string
+  }
   orderDate: string
   estimatedDelivery: string
   status: string
@@ -168,7 +177,7 @@ export default function OrderConfirmationPage() {
         <div>
           <h1 className="text-4xl font-bold text-green-600">Order Confirmed!</h1>
           <p className="text-lg text-muted-foreground mt-2">
-            Thank you for your order. We've received your payment and will process your order shortly.
+            Thank you for your order. We&apos;ve received your payment and will process your order shortly.
           </p>
           <Badge variant="secondary" className="mt-2">
             Order ID: {orderData.orderId}
@@ -332,7 +341,7 @@ export default function OrderConfirmationPage() {
               <div className="rounded-full bg-orange-100 p-1">
                 <CheckCircle className="h-4 w-4 text-orange-600" />
               </div>
-              <span className="text-sm">You'll receive an email confirmation shortly</span>
+              <span className="text-sm">You&apos;ll receive an email confirmation shortly</span>
             </div>
             <div className="flex items-center gap-3">
               <div className="rounded-full bg-purple-100 p-1">

@@ -21,7 +21,7 @@ interface ProductCardProps {
 
 export function ProductCard({ product, view, onAddToCart, onAddToWishlist, onShare, onClick }: ProductCardProps) {
   const { isInWishlist } = useWishlist()
-  const inWishlist = isInWishlist(product.id)
+  const inWishlist = isInWishlist(product.id.toString())
 
   return (
     <div className={cn(

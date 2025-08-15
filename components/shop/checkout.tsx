@@ -24,7 +24,13 @@ const formSchema = z.object({
 })
 
 interface CheckoutProps {
-  cart: any[]
+  cart: Array<{
+    id: string
+    name: string
+    price: number
+    quantity: number
+    image?: string
+  }>
   total: number
   onSuccess: () => void
 }

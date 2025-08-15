@@ -60,7 +60,7 @@ export async function GET(request: NextRequest) {
         url: data.AbstractURL || null,
       },
       related_topics:
-        data.RelatedTopics?.slice(0, 5).map((topic: any) => ({
+        data.RelatedTopics?.slice(0, 5).map((topic: { Text?: string; FirstURL?: string }) => ({
           title: topic.Text?.split(" - ")[0] || "Medical Information",
           snippet: topic.Text || "Medical information and health guidance",
           url: topic.FirstURL || "#",
@@ -68,7 +68,7 @@ export async function GET(request: NextRequest) {
           published_time: new Date().toISOString(),
         })) || [],
       results: [
-        ...(data.Results?.slice(0, 3).map((result: any) => ({
+        ...(data.Results?.slice(0, 3).map((result: { Text?: string; FirstURL?: string }) => ({
           title: result.Text?.split(" - ")[0] || "Medical Resource",
           snippet: result.Text || "Medical information resource",
           url: result.FirstURL || "#",
