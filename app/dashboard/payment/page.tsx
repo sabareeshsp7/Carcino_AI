@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { motion } from "framer-motion"
-import { ArrowLeft, CreditCard, Wallet, Building, Check, CheckCircle, Package, Loader2, Truck } from "lucide-react"
+import { ArrowLeft, CreditCard, Wallet, Building, CheckCircle, Package, Loader2, Truck } from "lucide-react"
 import { useForm } from "react-hook-form"
 import * as z from "zod"
 
@@ -31,10 +31,33 @@ const paymentSchema = z.object({
 export default function PaymentPage() {
   const router = useRouter()
   const { cartItems, cartCount, cartTotal, clearCart } = useCart()
-  const [deliveryAddress, setDeliveryAddress] = useState<any>(null)
+  interface DeliveryAddress {
+    name: string;
+    address: string;
+    city: string;
+    state: string;
+    pincode: string;
+    phone: string;
+  }
+
+  const [deliveryAddress, setDeliveryAddress] = useState<DeliveryAddress | null>(null)
   const [isProcessing, setIsProcessing] = useState(false)
   const [shouldRedirect, setShouldRedirect] = useState(false)
-  const [orderData, setOrderData] = useState<any>(null)
+  interface OrderData {
+    orderId: string;
+    items: Array<{ id: string; name: string; price: number; quantity: number }>; // Replace with the actual structure of cart items
+    total: number;
+    subtotal: number;
+    shipping: number;
+    tax: number;
+    paymentMethod: string;
+    deliveryAddress: DeliveryAddress | null;
+    orderDate: string;
+    estimatedDelivery: string;
+    status: string;
+  }
+
+  const [orderData, setOrderData] = useState<OrderData | null>(null)
   const [showRedirecting, setShowRedirecting] = useState(false)
   const [redirectStep, setRedirectStep] = useState(0)
   const [paymentCompleted, setPaymentCompleted] = useState(false)
@@ -334,11 +357,11 @@ export default function PaymentPage() {
 
           {/* Footer Message */}
           <div className="text-center text-sm text-gray-500 bg-white/50 p-4 rounded-lg">
-            <p className="font-medium">Please don't close this window.</p>
-            <p>You'll be redirected automatically...</p>
+            <p className="font-medium">Please don&apos;t close this window.</p>
+            <p>You&apos;ll be redirected automatically...</p>
             {isCOD && (
               <p className="text-xs mt-2 text-orange-600">
-                You'll pay when your order is delivered.
+                You&apos;ll pay when your order is delivered.
               </p>
             )}
           </div>
@@ -538,7 +561,7 @@ export default function PaymentPage() {
                       <span className="font-medium text-orange-800">Cash on Delivery</span>
                     </div>
                     <p className="text-sm text-orange-700">
-                      You'll pay when your order is delivered to your doorstep. 
+                      You&apos;ll pay when your order is delivered to your doorstep. 
                       Please keep the exact amount ready for a smooth delivery experience.
                     </p>
                   </motion.div>

@@ -2,11 +2,10 @@
 
 import { useState, useMemo } from "react"
 import { useRouter } from "next/navigation"
-import { Search, Filter, Grid, List, ShoppingCart, Heart, Share2, Star } from "lucide-react"
+import { Search, Filter, Grid, List, ShoppingCart, Heart } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ProductCard } from "@/components/shop/product-card"
 import { ProductDetail } from "@/components/shop/product-detail"
@@ -26,7 +25,7 @@ export default function ShopPage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedCategory, setSelectedCategory] = useState("all")
   const [sortBy, setSortBy] = useState("name")
-  const [priceRange, setPriceRange] = useState([0, 2000])
+  const [priceRange] = useState([0, 2000])
   const [view, setView] = useState<"grid" | "list">("grid")
 
   // Get unique categories
@@ -37,7 +36,7 @@ export default function ShopPage() {
 
   // Filter and sort products
   const filteredProducts = useMemo(() => {
-    let filtered = medicalProducts.filter(product => {
+    const filtered = medicalProducts.filter(product => {
       const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                           product.description.toLowerCase().includes(searchQuery.toLowerCase())
       const matchesCategory = selectedCategory === "all" || product.category === selectedCategory
@@ -257,7 +256,6 @@ export default function ShopPage() {
                 onAddToWishlist={handleAddToWishlist}
                 onShare={handleShare}
                 onClick={() => setSelectedProduct(product)}
-                isInWishlist={isInWishlist(product.id.toString())}
               />
             ))}
           </div>
@@ -270,8 +268,6 @@ export default function ShopPage() {
         open={!!selectedProduct}
         onClose={() => setSelectedProduct(null)}
         onAddToCart={handleAddToCart}
-        onAddToWishlist={handleAddToWishlist}
-        isInWishlist={selectedProduct ? isInWishlist(selectedProduct.id.toString()) : false}
       />
     </div>
   )

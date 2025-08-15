@@ -47,7 +47,18 @@ export default function CartPage() {
   // State for additional cart functionality
   const [discount, setDiscount] = useState(0)
   const [voucherCode, setVoucherCode] = useState("")
-  const [deliveryAddress, setDeliveryAddress] = useState<any>(null)
+  interface DeliveryAddress {
+    name: string;
+    email: string;
+    phone: string;
+    address: string;
+    city: string;
+    state: string;
+    pincode: string;
+    coordinates?: { lat: number; lng: number };
+  }
+  
+  const [deliveryAddress, setDeliveryAddress] = useState<DeliveryAddress | null>(null)
   const [selectedLocation, setSelectedLocation] = useState<{ lat: number; lng: number } | null>(null)
   const router = useRouter()
 
