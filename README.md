@@ -939,7 +939,3 @@ class SecurityValidator:
 - **Deployment Guides**: Platform-specific setup instructions
 
 ---
-
-**DermaSense AI** - Empowering healthcare through artificial intelligence and comprehensive patient care.
-
-*Last Updated: July 2025 | Version 2.1.0 | Production Ready*
